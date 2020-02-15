@@ -1,0 +1,79 @@
+[
+    {
+        "id" : 0,
+        "layer_name" : "input",
+        "type" : "data",
+        "input_channel" : 2,
+        "input_height" : 28,
+        "input_width" : 28,
+        "weight_filler" : "rand"
+    },
+
+    {
+        "id" : 1,
+        "layer_name" : "conv0",
+        "type" : "CONV",
+        "output_num" : 1,
+        "kernel_size" : 5,
+        "padding" : "SAME",
+        "weight_filler" : "rand",
+        "weight_filler_start" : 1
+    },
+
+    {
+        "id" : 2,
+        "layer_name" : "pool0",
+        "type" : "POOL",
+        "stride" : 2,
+        "kernel_size" : 2
+    },
+
+    {
+        "id" : 3,
+        "layer_name" : "conv1",
+        "type" : "CONV",
+        "output_num" : 1,
+        "kernel_size" : 5,
+        "padding" : "SAME",
+        "weight_filler" : "rand",
+        "weight_filler_start" : 1
+    },
+
+    {
+        "id" : 4,
+        "layer_name" : "pool1",
+        "type" : "POOL",
+        "stride" : 2,
+        "kernel_size" : 2
+    },
+    
+    {
+        "id" : 5,
+        "layer_name" : "fc0",
+        "type" : "FC",
+        "output_num" : 500,
+        "weight_filler" : "rand",
+        "weight_filler_start" : 1
+    },
+
+    {
+        "id" : 6,
+        "layer_name" : "relu0",
+        "type" : "RELU"
+    },
+    
+    {
+        "id" : 7,
+        "layer_name" : "fc1",
+        "type" : "FC",
+        "output_num" : 10,
+        "weight_filler" : "rand",
+        "weight_filler_start" : 1
+    },
+
+    {
+        "id" : 8,
+        "layer_name" : "SM0",
+        "type" : "SOFTMAX"
+    }
+]
