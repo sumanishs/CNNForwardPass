@@ -3,33 +3,19 @@
         "id" : 0,
         "layer_name" : "input",
         "type" : "data",
-        "input_channel" : 2,
+        "input_channel" : 1,
         "input_height" : 28,
         "input_width" : 28,
-        "weight_filler" : "rand"
+        "weight_filler" : "rand",
+        "input_source_type" : "image_file",
+        "input_source_path" : "/home/sumanish/AI_CNN_FPGA/test_image/3_img.bmp",
+        "weight_source_type" : "caffemodel",
+        "weight_source_path" : "/home/sumanish/AI_CNN_FPGA/Convolve_Weights_CNNForwardPass/Weights/snapshot_1ch_2ch_500ch_10ch__iter_10000.caffemodel",
+        "prototxt" : "/home/sumanish/AI_CNN_FPGA/prototxt/lenet.prototxt"
     },
 
     {
         "id" : 1,
-        "layer_name" : "conv0",
-        "type" : "CONV",
-        "output_num" : 1,
-        "kernel_size" : 5,
-        "padding" : "SAME",
-        "weight_filler" : "rand",
-        "weight_filler_start" : 1
-    },
-
-    {
-        "id" : 2,
-        "layer_name" : "pool0",
-        "type" : "POOL",
-        "stride" : 2,
-        "kernel_size" : 2
-    },
-
-    {
-        "id" : 3,
         "layer_name" : "conv1",
         "type" : "CONV",
         "output_num" : 1,
@@ -40,8 +26,27 @@
     },
 
     {
-        "id" : 4,
+        "id" : 2,
         "layer_name" : "pool1",
+        "type" : "POOL",
+        "stride" : 2,
+        "kernel_size" : 2
+    },
+
+    {
+        "id" : 3,
+        "layer_name" : "conv2",
+        "type" : "CONV",
+        "output_num" : 1,
+        "kernel_size" : 5,
+        "padding" : "SAME",
+        "weight_filler" : "rand",
+        "weight_filler_start" : 1
+    },
+
+    {
+        "id" : 4,
+        "layer_name" : "pool2",
         "type" : "POOL",
         "stride" : 2,
         "kernel_size" : 2
@@ -49,7 +54,7 @@
     
     {
         "id" : 5,
-        "layer_name" : "fc0",
+        "layer_name" : "ip1",
         "type" : "FC",
         "output_num" : 500,
         "weight_filler" : "rand",
@@ -58,13 +63,13 @@
 
     {
         "id" : 6,
-        "layer_name" : "relu0",
+        "layer_name" : "relu1",
         "type" : "RELU"
     },
     
     {
         "id" : 7,
-        "layer_name" : "fc1",
+        "layer_name" : "ip2",
         "type" : "FC",
         "output_num" : 10,
         "weight_filler" : "rand",
@@ -73,7 +78,7 @@
 
     {
         "id" : 8,
-        "layer_name" : "SM0",
+        "layer_name" : "sm1",
         "type" : "SOFTMAX"
     }
 ]
