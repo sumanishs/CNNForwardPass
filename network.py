@@ -1,4 +1,4 @@
-#!/usr/bin/python2.7
+#!/local/workspace/tools/anaconda2/bin/python2.7
 import os
 import struct
 import sys
@@ -13,13 +13,21 @@ import cv2
 os.environ["GLOG_minloglevel"] = "1"
 import caffe
 
+np.set_printoptions(threshold=sys.maxsize)
+np.set_printoptions(precision=3)
+np.set_printoptions(suppress=True)
+np.set_printoptions(linewidth=np.inf)
+
 class input_misc:
-    def __init__(self, ist = "NONE", isp = "NONE", wst = "NONE", wsp = "NONE", protxt = "NONE"):
+    def __init__(self, ist = "NONE", isp = "NONE", wst = "NONE", wsp = "NONE", protxt = "NONE", data_format = "NONE", qm = 0, qn = 0):
         self.ist = ist
         self.isp = isp
         self.wst = wst
         self.wsp = wsp
         self.protxt = protxt
+        self.data_format = data_format
+        self.qm = qm
+        self.qn = qn
 
     def __str__(self):
         return "Input source type:%s, Input source path:%s \nWeight source type:%s, Weight source path:%s" % (self.ist, self.isp, self.wst, self.wsp)
@@ -154,6 +162,9 @@ class Processor:
             n = node(id = id, layer_name = layer_name, type = type, ic = ic, ih = ih, iw = iw, oc = oc, k = k, s = s, p = p, wtf = wtf, wfs = wfs) 
             graph.append(n) 
             
+            df = "NONE"
+            qm = 0
+            qn = 0
             if layer.get('input_source_type'):
                 ist = layer['input_source_type']     
             if layer.get('input_source_path'):
@@ -163,10 +174,16 @@ class Processor:
             if layer.get('weight_source_path'):
                 wsp = layer['weight_source_path']     
             if layer.get('prototxt'):
-                protxt = layer['prototxt']     
+                protxt = layer['prototxt']
+            if layer.get('data_format'):
+                df = layer['data_format']
+            if layer.get('qm'):
+                qm = layer['qm']
+            if layer.get('qn'):
+                qn = layer['qn']
             
             if type == "data":
-                input_m = input_misc(ist = ist, isp = isp, wst = wst, wsp = wsp, protxt = protxt)
+                input_m = input_misc(ist=ist, isp=isp, wst=wst, wsp=wsp, protxt=protxt, data_format=df, qm=qm, qn=qn)
     
         return graph, input_m 
 
@@ -180,11 +197,14 @@ class Processor:
         print "Loading prototxt:", self.__input_m.protxt
         print "Loading weights:", self.__input_m.wsp
         weights = {}
-        net = caffe.Net(str(self.__input_m.protxt), 1, weights=str(self.__input_m.wsp))
-        #net = caffe.Net(self.__input_m.protxt, self.__input_m.wsp, caffe.TEST)
+        #net = caffe.Net(str(self.__input_m.protxt), 1, weights=str(self.__input_m.wsp))
+        net = caffe.Net(str(self.__input_m.protxt), caffe.TEST, weights=str(self.__input_m.wsp))
         for param_name in net.params.keys():
                 weight = net.params[param_name][0].data
                 print "Param name:", param_name, ", Weight shape:", weight.shape, ", ID:", self.find_id(graph, param_name)
+                if self.__input_m.data_format == 'qmn' or self.__input_m.data_format == 'QMN':
+                    weight = weight * (2**self.__input_m.qn)
+                    weight = weight.astype('int64')
                 layer_id = self.find_id(graph, param_name)
                 if layer_id != -1:
                     weights[layer_id] = weight
@@ -225,7 +245,7 @@ class Processor:
         return weight_pool
     
     def create_input_data(self, inode):
-        data = np.zeros([inode.ic, inode.oh, inode.ow], dtype = float)   #Image size 10 x 10 x 4
+        data = np.zeros([inode.ic, inode.oh, inode.ow], dtype = np.float64)   #Image size 10 x 10 x 4
         if self.__input_m.ist == 'image_file':
             print "Loading input data from <", self.__input_m.isp, ">"
             img = cv2.imread(self.__input_m.isp, 0)
@@ -236,13 +256,17 @@ class Processor:
             else:
                 img = img.reshape(inode.ih, inode.iw);
             print "Img shape:", img.shape
-            img = img/256.0
+            img = img/255.0
             print type(img)
             for i in range(inode.ic):
                 data[i] = img
         elif self.__input_m.ist == 'dummy':    
             for i in range(inode.ic):
                 cl.fillarray_2d(data[i], inode.wtf, i)
+
+        if self.__input_m.data_format == 'qmn' or self.__input_m.data_format == 'QMN':
+            data = data * (2**self.__input_m.qn)
+            data = data.astype('int64')
         return data
 
     def process(self, args):    
@@ -282,6 +306,8 @@ class Processor:
         for i in range(1, nnode):
             l = graph[i] 
             input = output_stack.pop()
+            if self.__input_m.data_format == 'qmn' or self.__input_m.data_format == 'QMN':
+                input = input.astype('int64')
             print "Input shape:", input.shape
             print "Len:", len(input.shape)
             if l.type == 'CONV':
@@ -296,8 +322,8 @@ class Processor:
                     output = cl.ReLu_3d(input)
             elif l.type == 'FC':
                  if len(input.shape) != 1:
-                    flat = cl.flatten(input)
-                    input = flat
+                    input = cl.flatten(input)
+                    #input = flat
                  weights = weight_pool[l.id] 
                  output = cl.fully_connected_1d(input, weights, l.oc) 
             elif l.type == 'SOFTMAX':
